@@ -1,0 +1,27 @@
+project: hooklings
+owner: joe
+date_opened: "2026-04-22"
+date_updated: "2026-04-22"
+status: complete
+summary: |
+  Feature-complete and production-ready. All handlers, emit formats, CLI subcommands,
+  and tests implemented.
+completed:
+  - Config System with layered TOML configuration and merge semantics
+  - Emit Module with JSON and markdown table output formats
+  - Environment Handlers (detect_shell, check_tools, check_pwd)
+  - Feature Handlers (op, ssh, handoff, doob with graceful fallbacks)
+  - CLI Subcommands (preflight, check, config show)
+  - Conformance tests for handler registry
+  - Fuzz targets for config parsing and emit tables
+  - Build Status clean, tests pass, clippy clean
+open_items: []
+next_steps:
+  - Consider additional handlers (Rust toolchain verification, container availability)
+  - Extend config merging to support environment variable overrides
+  - Build integration tests with actual VPS deployments
+build_status:
+  check: PASS
+  test: PASS
+  clippy: CLEAN
+branch: main
