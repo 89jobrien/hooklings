@@ -1,27 +1,14 @@
 pipeline: preflight
 steps:
-  - join_all: environment
-    arms:
-      - detect_shell
-      - step: check_tools
-        args:
-          tools:
-            - nu
-            - just
-            - cargo
-            - op
-            - devkit
-            - gkg
-            - doob
-            - handoff-db
-            - handoff-detect
-      - check_pwd
+  - step: detect_shell
 
-  - join_all: git
-    arms:
-      - git::status
-      - step: git::log
-        args: { n: 5 }
+  - step: check_tools
+
+  - step: check_pwd
+
+  - step: git::status
+
+  - step: git::log
 
   - step: op::auth_check
 

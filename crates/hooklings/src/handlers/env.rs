@@ -42,7 +42,22 @@ pub fn register(registry: &mut HandlerRegistry) {
                     .filter_map(|v| v.as_str().map(str::to_string))
                     .collect()
             })
-            .unwrap_or_default();
+            .unwrap_or_else(|| {
+                [
+                    "nu",
+                    "just",
+                    "cargo",
+                    "op",
+                    "devkit",
+                    "gkg",
+                    "doob",
+                    "handoff-db",
+                    "handoff-detect",
+                ]
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+            });
 
         let mut results = vec![];
         for tool in tools {
