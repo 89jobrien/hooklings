@@ -1,0 +1,29 @@
+[package]
+name = "hooklings-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+tempfile = "3"
+
+[dependencies.hooklings]
+path = "../crates/hooklings"
+
+[[bin]]
+name = "config_parse"
+path = "fuzz_targets/config_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "emit_table"
+path = "fuzz_targets/emit_table.rs"
+test = false
+doc = false
+bench = false
