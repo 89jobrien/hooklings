@@ -29,6 +29,7 @@ anyhow = { workspace = true }
 cruxx-script = { path = "/Users/joe/dev/crux/crates/cruxx-script" }
 cruxx-agentic = { path = "/Users/joe/dev/crux/crates/cruxx-agentic" }
 cruxx-core = { path = "/Users/joe/dev/crux/crates/cruxx-core" }
+cruxx-types = { path = "/Users/joe/dev/crux/crates/cruxx-types" }
 
 [dev-dependencies]
 tempfile = { workspace = true }
