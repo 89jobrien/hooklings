@@ -1,5 +1,6 @@
+use cruxx_agentic::sqlite;
 use cruxx_script::HandlerRegistry;
-use hooklings::handlers::{doob, handoff};
+use hooklings::handlers::handoff;
 use rusqlite::Connection;
 use serde_json::json;
 use tempfile::NamedTempFile;
@@ -26,7 +27,7 @@ fn setup_handoff_db() -> NamedTempFile {
     f
 }
 
-fn setup_doob_db() -> NamedTempFile {
+fn setup_todos_db() -> NamedTempFile {
     let f = NamedTempFile::new().unwrap();
     let conn = Connection::open(f.path()).unwrap();
     conn.execute_batch(
@@ -93,15 +94,25 @@ async fn handoff_pending_empty_db_returns_empty_array() {
     assert_eq!(result["items"].as_array().unwrap().len(), 0);
 }
 
+/// Demonstrate using sqlite::query_many directly for any SQLite-backed todo store.
+/// This is the intended pattern — no doob-specific handler needed.
 #[tokio::test]
-async fn doob_pending_returns_pending_todos_only() {
-    let db = setup_doob_db();
+async fn sqlite_query_many_for_todos() {
+    let db = setup_todos_db();
     let mut reg = HandlerRegistry::new();
-    doob::register(&mut reg, db.path().to_str().unwrap());
+    sqlite::register(&mut reg);
 
-    let h = reg.get_handler("doob::pending").unwrap().clone();
-    let result = h(json!({})).await.unwrap();
-    let todos = result["todos"].as_array().unwrap();
-    assert_eq!(todos.len(), 1);
-    assert_eq!(todos[0]["status"], "pending");
+    let h = reg.get_handler("sqlite::query_many").unwrap().clone();
+    let result = h(json!({
+        "args": {
+            "db": db.path().to_str().unwrap(),
+            "sql": "SELECT id, title, status FROM todos WHERE status = 'pending'"
+        }
+    }))
+    .await
+    .unwrap();
+
+    let rows = result["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0]["status"], "pending");
 }

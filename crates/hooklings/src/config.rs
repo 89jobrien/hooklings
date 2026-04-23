@@ -52,8 +52,6 @@ pub struct ChecksConfig {
     pub ssh_reachable: SshConfig,
     #[serde(default)]
     pub handoff_pending: HandoffConfig,
-    #[serde(default)]
-    pub doob_pending: DoobConfig,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -100,29 +98,14 @@ impl Default for HandoffConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DoobConfig {
-    pub db: String,
-}
-
-impl Default for DoobConfig {
-    fn default() -> Self {
-        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-        Self {
-            db: format!("{home}/.local/share/doob/doob.db"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EmitConfig {
     pub json_path: String,
 }
 
 impl Default for EmitConfig {
     fn default() -> Self {
-        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
         Self {
-            json_path: format!("{home}/.local/share/hooklings/last-preflight.json"),
+            json_path: ".ctx/last-preflight.json".into(),
         }
     }
 }
@@ -166,11 +149,7 @@ impl Config {
             },
             checks: ChecksConfig {
                 op_auth: OpAuthConfig {
-                    enabled: if other.checks.op_auth.enabled {
-                        true
-                    } else {
-                        self.checks.op_auth.enabled
-                    },
+                    enabled: other.checks.op_auth.enabled || self.checks.op_auth.enabled,
                 },
                 ssh_reachable: SshConfig {
                     enabled: other.checks.ssh_reachable.enabled
@@ -186,13 +165,6 @@ impl Config {
                         other.checks.handoff_pending.db
                     } else {
                         self.checks.handoff_pending.db
-                    },
-                },
-                doob_pending: DoobConfig {
-                    db: if other.checks.doob_pending.db != DoobConfig::default().db {
-                        other.checks.doob_pending.db
-                    } else {
-                        self.checks.doob_pending.db
                     },
                 },
             },

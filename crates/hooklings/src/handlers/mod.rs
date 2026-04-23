@@ -1,4 +1,3 @@
-pub mod doob;
 pub mod env;
 pub mod handoff;
 pub mod op;
@@ -6,6 +5,7 @@ pub mod ssh;
 
 use cruxx_script::HandlerRegistry;
 
+/// Register all hooklings handlers into the given registry.
 pub fn register_all(registry: &mut HandlerRegistry, config: &crate::config::Config) {
     env::register(registry);
     op::register(registry, config.checks.op_auth.enabled);
@@ -15,5 +15,6 @@ pub fn register_all(registry: &mut HandlerRegistry, config: &crate::config::Conf
         &config.checks.ssh_reachable.host,
     );
     handoff::register(registry, &config.checks.handoff_pending.db);
-    doob::register(registry, &config.checks.doob_pending.db);
+    // doob::pending is not registered here — pipelines use sqlite::query_many directly
+    // against a user-configured SQLite DB path (see [sqlite.todos] in hooklings.toml).
 }

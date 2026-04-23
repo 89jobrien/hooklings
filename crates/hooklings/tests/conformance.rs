@@ -18,7 +18,6 @@ fn all_hooklings_handlers_registered() {
         "op::auth_check",
         "ssh::reachable",
         "handoff::pending",
-        "doob::pending",
     ];
     for name in expected {
         assert!(

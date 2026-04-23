@@ -14,7 +14,7 @@ fn default_config_has_expected_values() {
     assert!(!cfg.checks.op_auth.enabled);
     assert!(!cfg.checks.ssh_reachable.enabled);
     assert_eq!(cfg.checks.ssh_reachable.host, "minibox");
-    assert!(cfg.emit.json_path.contains("hooklings"));
+    assert!(cfg.emit.json_path.contains(".ctx"));
 }
 
 #[test]
