@@ -58,6 +58,7 @@ pub struct ChecksConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpAuthConfig {
+    #[serde(default)]
     pub enabled: bool,
 }
 
@@ -69,8 +70,16 @@ impl Default for OpAuthConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SshConfig {
+    #[serde(default)]
     pub enabled: bool,
+    #[serde(default = "SshConfig::default_host")]
     pub host: String,
+}
+
+impl SshConfig {
+    fn default_host() -> String {
+        "minibox".into()
+    }
 }
 
 impl Default for SshConfig {
