@@ -1,0 +1,36 @@
+[package]
+name = "hooklings"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+
+[[bin]]
+name = "hooklings"
+path = "src/main.rs"
+
+[lib]
+name = "hooklings"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+rusqlite = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+cruxx-script = { path = "/Users/joe/dev/crux/crates/cruxx-script" }
+cruxx-agentic = { path = "/Users/joe/dev/crux/crates/cruxx-agentic" }
+cruxx-core = { path = "/Users/joe/dev/crux/crates/cruxx-core" }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+proptest = { workspace = true }
+tokio = { workspace = true }
