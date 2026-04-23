@@ -1,0 +1,32 @@
+pipeline: preflight
+steps:
+  - join_all: environment
+    arms:
+      - detect_shell
+      - step: check_tools
+        args:
+          tools:
+            - nu
+            - just
+            - cargo
+            - op
+            - devkit
+            - gkg
+            - doob
+            - handoff-db
+            - handoff-detect
+      - check_pwd
+
+  - join_all: git
+    arms:
+      - git::status
+      - step: git::log
+        args: { n: 5 }
+
+  - step: op::auth_check
+
+  - step: ssh::reachable
+
+  - step: handoff::pending
+
+  - step: doob::pending
