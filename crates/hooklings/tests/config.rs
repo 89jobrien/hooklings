@@ -1,6 +1,4 @@
-use hooklings::config::{
-    ChecksConfig, Config, EmitConfig, OpAuthConfig, PipelineConfig, SshConfig,
-};
+use hooklings::config::{ChecksConfig, Config, OpAuthConfig, SshConfig};
 use std::io::Write;
 use tempfile::NamedTempFile;
 

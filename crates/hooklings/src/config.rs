@@ -56,16 +56,10 @@ pub struct ChecksConfig {
     pub doob_pending: DoobConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct OpAuthConfig {
     #[serde(default)]
     pub enabled: bool,
-}
-
-impl Default for OpAuthConfig {
-    fn default() -> Self {
-        Self { enabled: false }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
