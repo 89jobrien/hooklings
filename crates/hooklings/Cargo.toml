@@ -26,10 +26,10 @@ thiserror = { workspace = true }
 rusqlite = { workspace = true }
 chrono = { workspace = true }
 anyhow = { workspace = true }
-cruxx-script = { path = "/Users/joe/dev/crux/crates/cruxx-script" }
-cruxx-agentic = { path = "/Users/joe/dev/crux/crates/cruxx-agentic" }
-cruxx-core = { path = "/Users/joe/dev/crux/crates/cruxx-core" }
-cruxx-types = { path = "/Users/joe/dev/crux/crates/cruxx-types" }
+crux-script = { path = "/Users/joe/dev/crux/crates/crux-script" }
+crux-agentic = { path = "/Users/joe/dev/crux/crates/crux-agentic" }
+crux-runtime = { path = "/Users/joe/dev/crux/crates/crux-runtime", features = ["tokio-runtime"] }
+crux-types = { path = "/Users/joe/dev/crux/crates/crux-types" }
 
 [dev-dependencies]
 tempfile = { workspace = true }

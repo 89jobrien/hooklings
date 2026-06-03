@@ -1,4 +1,6 @@
-use cruxx_script::HandlerRegistry;
+#![allow(dead_code)]
+
+use crux_script::HandlerRegistry;
 use hooklings::handlers::env;
 use serde_json::json;
 

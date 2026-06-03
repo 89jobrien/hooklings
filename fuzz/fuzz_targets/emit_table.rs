@@ -1,5 +1,5 @@
 #![no_main]
-use hooklings::emit::{CheckResult, Emitter, Status};
+use hooklings::emit::{self, CheckResult, Status};
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
@@ -20,5 +20,5 @@ fuzz_target!(|data: &[u8]| {
         })
         .collect();
     // Must not panic
-    let _ = Emitter::markdown_table(&results);
+    let _ = emit::markdown_table(&results);
 });

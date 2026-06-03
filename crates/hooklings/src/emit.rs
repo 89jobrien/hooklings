@@ -1,4 +1,7 @@
 //! Emit preflight results as JSON to disk and a markdown table to stdout.
+//!
+//! [`Emitter`] handles JSON serialisation and file output. Use the free function
+//! [`markdown_table`] for text rendering — it requires no instance state.
 
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -45,6 +48,22 @@ pub struct CheckResult {
     pub data: Option<Value>,
 }
 
+/// Render a slice of [`CheckResult`] values as a markdown table string.
+pub fn markdown_table(results: &[CheckResult]) -> String {
+    let mut out = String::new();
+    out.push_str("| Check | Status | Detail |\n");
+    out.push_str("|---|---|---|\n");
+    for r in results {
+        out.push_str(&format!(
+            "| {} | {} | {} |\n",
+            r.name,
+            r.status.label(),
+            r.detail
+        ));
+    }
+    out
+}
+
 pub struct Emitter {
     pipeline: String,
 }
@@ -52,21 +71,6 @@ pub struct Emitter {
 impl Emitter {
     pub fn new(pipeline: String) -> Self {
         Self { pipeline }
-    }
-
-    pub fn markdown_table(results: &[CheckResult]) -> String {
-        let mut out = String::new();
-        out.push_str("| Check | Status | Detail |\n");
-        out.push_str("|---|---|---|\n");
-        for r in results {
-            out.push_str(&format!(
-                "| {} | {} | {} |\n",
-                r.name,
-                r.status.label(),
-                r.detail
-            ));
-        }
-        out
     }
 
     pub fn to_json(&self, results: &[CheckResult]) -> Value {

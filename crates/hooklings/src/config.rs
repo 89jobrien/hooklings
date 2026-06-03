@@ -69,6 +69,7 @@ pub struct SshConfig {
 }
 
 impl SshConfig {
+    #[allow(dead_code)]
     fn default_host() -> String {
         "minibox".into()
     }
@@ -123,15 +124,21 @@ impl Config {
     }
 
     pub fn load() -> Self {
-        let global = Self::global_path();
-        let project = Self::project_path();
+        let base = Self::load_global();
+        Self::apply_project_overlay(base)
+    }
 
-        let base = if global.exists() {
+    fn load_global() -> Self {
+        let global = Self::global_path();
+        if global.exists() {
             Self::load_from_file(&global).unwrap_or_default()
         } else {
             Self::default()
-        };
+        }
+    }
 
+    fn apply_project_overlay(base: Self) -> Self {
+        let project = Self::project_path();
         if let Some(proj_path) = project.filter(|p| p.exists()) {
             let overlay = Self::load_from_file(&proj_path).unwrap_or_default();
             base.merge(overlay)

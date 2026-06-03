@@ -1,6 +1,7 @@
-use hooklings::emit::{CheckResult, Emitter, Status};
+use hooklings::emit::{self, CheckResult, Emitter, Status};
 use serde_json::json;
 
+#[allow(dead_code)]
 fn sample_results() -> Vec<CheckResult> {
     vec![
         CheckResult {
@@ -32,7 +33,7 @@ fn sample_results() -> Vec<CheckResult> {
 
 #[test]
 fn markdown_table_contains_all_check_names() {
-    let table = Emitter::markdown_table(&sample_results());
+    let table = emit::markdown_table(&sample_results());
     assert!(table.contains("detect_shell"));
     assert!(table.contains("check_tools"));
     assert!(table.contains("op::auth_check"));
@@ -41,7 +42,7 @@ fn markdown_table_contains_all_check_names() {
 
 #[test]
 fn markdown_table_contains_status_labels() {
-    let table = Emitter::markdown_table(&sample_results());
+    let table = emit::markdown_table(&sample_results());
     assert!(table.contains("PASS"));
     assert!(table.contains("WARN"));
     assert!(table.contains("SKIP"));
@@ -50,7 +51,7 @@ fn markdown_table_contains_status_labels() {
 
 #[test]
 fn markdown_table_has_header_row() {
-    let table = Emitter::markdown_table(&sample_results());
+    let table = emit::markdown_table(&sample_results());
     assert!(table.contains("| Check"));
     assert!(table.contains("| Status"));
     assert!(table.contains("| Detail"));

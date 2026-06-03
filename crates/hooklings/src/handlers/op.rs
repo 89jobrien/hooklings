@@ -1,7 +1,7 @@
 //! `op::auth_check` — verify 1Password CLI is authenticated.
 
-use cruxx_core::prelude::CruxErr;
-use cruxx_script::HandlerRegistry;
+use crux_runtime::prelude::CruxErr;
+use crux_script::HandlerRegistry;
 use serde_json::{Value, json};
 use tokio::process::Command;
 

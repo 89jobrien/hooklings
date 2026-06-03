@@ -1,6 +1,7 @@
-use cruxx_script::HandlerRegistry;
+use crux_script::HandlerRegistry;
 use hooklings::{config::Config, handlers};
 
+#[allow(dead_code)]
 fn full_registry() -> HandlerRegistry {
     let cfg = Config::default();
     let mut reg = HandlerRegistry::new();
@@ -28,9 +29,9 @@ fn all_hooklings_handlers_registered() {
 }
 
 #[test]
-fn cruxx_agentic_handlers_also_available() {
+fn crux_agentic_handlers_also_available() {
     let mut reg = HandlerRegistry::new();
-    cruxx_agentic::register_all(&mut reg);
+    crux_agentic::register_all(&mut reg);
     let cfg = Config::default();
     handlers::register_all(&mut reg, &cfg);
 

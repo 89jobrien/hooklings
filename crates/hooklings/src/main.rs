@@ -2,12 +2,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use cruxx_agentic::register_all as register_agentic;
-use cruxx_script::{HandlerRegistry, Runner};
-use cruxx_types::step::StepStatus;
+use crux_agentic::register_all as register_agentic;
+use crux_script::{HandlerRegistry, Runner};
+use crux_types::step::StepStatus;
 
 use hooklings::config;
-use hooklings::emit::{CheckResult, Emitter, Status};
+use hooklings::emit::{self, CheckResult, Emitter, Status};
 use hooklings::handlers;
 
 #[derive(Parser)]
@@ -48,6 +48,70 @@ enum EmitMode {
     Both,
 }
 
+async fn run_preflight(
+    cfg: &config::Config,
+    emit: EmitMode,
+    pipeline: Option<PathBuf>,
+) -> anyhow::Result<()> {
+    let mut registry = HandlerRegistry::new();
+    register_agentic(&mut registry);
+    handlers::register_all(&mut registry, cfg);
+
+    let pipeline_path = pipeline.unwrap_or_else(|| PathBuf::from(&cfg.pipeline.default));
+    let pipeline_yaml = std::fs::read_to_string(&pipeline_path)
+        .map_err(|e| anyhow::anyhow!("cannot read pipeline {}: {e}", pipeline_path.display()))?;
+    let pipeline_def = crux_script::load(&pipeline_yaml)
+        .map_err(|e| anyhow::anyhow!("pipeline parse error: {e}"))?;
+
+    let runner = Runner::new(Arc::new(registry));
+    let trace = runner.run(&pipeline_def, serde_json::json!({})).await;
+
+    let results: Vec<CheckResult> = trace
+        .steps
+        .iter()
+        .filter(|s| s.status != StepStatus::Rejected)
+        .map(|step| {
+            let output = step.output.clone().unwrap_or(serde_json::Value::Null);
+            let status = if step.status == StepStatus::Ok {
+                match output.get("status").and_then(|s| s.as_str()) {
+                    Some("warn") => Status::Warn,
+                    Some("skip") => Status::Skip,
+                    Some("fail") => Status::Fail,
+                    _ => Status::Pass,
+                }
+            } else {
+                Status::Error
+            };
+            CheckResult {
+                name: step.name.clone(),
+                status,
+                detail: output
+                    .get("detail")
+                    .and_then(|d| d.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+                data: Some(output),
+            }
+        })
+        .collect();
+
+    let emitter = Emitter::new("preflight".into());
+    match emit {
+        EmitMode::Json | EmitMode::Both => {
+            let json_path = PathBuf::from(&cfg.emit.json_path);
+            emitter.write_json(&results, &json_path)?;
+        }
+        EmitMode::Table => {}
+    }
+    match emit {
+        EmitMode::Table | EmitMode::Both => {
+            print!("{}", emit::markdown_table(&results));
+        }
+        EmitMode::Json => {}
+    }
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
@@ -55,66 +119,7 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Command::Preflight { emit, pipeline } => {
-            let mut registry = HandlerRegistry::new();
-            register_agentic(&mut registry);
-            handlers::register_all(&mut registry, &cfg);
-
-            let pipeline_path = pipeline.unwrap_or_else(|| PathBuf::from(&cfg.pipeline.default));
-
-            let pipeline_yaml = std::fs::read_to_string(&pipeline_path).map_err(|e| {
-                anyhow::anyhow!("cannot read pipeline {}: {e}", pipeline_path.display())
-            })?;
-
-            let pipeline_def = cruxx_script::load(&pipeline_yaml)
-                .map_err(|e| anyhow::anyhow!("pipeline parse error: {e}"))?;
-
-            let runner = Runner::new(Arc::new(registry));
-            let trace = runner.run(&pipeline_def, serde_json::json!({})).await;
-
-            let results: Vec<CheckResult> = trace
-                .steps
-                .iter()
-                .filter(|s| s.status != StepStatus::Rejected)
-                .map(|step| {
-                    let output = step.output.clone().unwrap_or(serde_json::Value::Null);
-                    let status = if step.status == StepStatus::Ok {
-                        match output.get("status").and_then(|s| s.as_str()) {
-                            Some("warn") => Status::Warn,
-                            Some("skip") => Status::Skip,
-                            Some("fail") => Status::Fail,
-                            _ => Status::Pass,
-                        }
-                    } else {
-                        Status::Error
-                    };
-                    CheckResult {
-                        name: step.name.clone(),
-                        status,
-                        detail: output
-                            .get("detail")
-                            .and_then(|d| d.as_str())
-                            .unwrap_or("")
-                            .to_string(),
-                        data: Some(output),
-                    }
-                })
-                .collect();
-
-            let emitter = Emitter::new("preflight".into());
-
-            match emit {
-                EmitMode::Json | EmitMode::Both => {
-                    let json_path = PathBuf::from(&cfg.emit.json_path);
-                    emitter.write_json(&results, &json_path)?;
-                }
-                EmitMode::Table => {}
-            }
-            match emit {
-                EmitMode::Table | EmitMode::Both => {
-                    print!("{}", Emitter::markdown_table(&results));
-                }
-                EmitMode::Json => {}
-            }
+            run_preflight(&cfg, emit, pipeline).await?;
         }
 
         Command::Check { name } => {

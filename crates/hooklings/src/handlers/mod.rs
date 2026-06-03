@@ -3,7 +3,7 @@ pub mod handoff;
 pub mod op;
 pub mod ssh;
 
-use cruxx_script::HandlerRegistry;
+use crux_script::HandlerRegistry;
 
 /// Register all hooklings handlers into the given registry.
 pub fn register_all(registry: &mut HandlerRegistry, config: &crate::config::Config) {

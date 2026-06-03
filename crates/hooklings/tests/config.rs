@@ -2,6 +2,7 @@ use hooklings::config::{ChecksConfig, Config, OpAuthConfig, SshConfig};
 use std::io::Write;
 use tempfile::NamedTempFile;
 
+#[allow(dead_code)]
 fn write_toml(content: &str) -> NamedTempFile {
     let mut f = NamedTempFile::new().unwrap();
     f.write_all(content.as_bytes()).unwrap();

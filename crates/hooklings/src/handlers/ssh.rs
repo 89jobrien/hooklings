@@ -1,7 +1,7 @@
 //! `ssh::reachable` — check SSH reachability with a 3-second timeout.
 
-use cruxx_core::prelude::CruxErr;
-use cruxx_script::HandlerRegistry;
+use crux_runtime::prelude::CruxErr;
+use crux_script::HandlerRegistry;
 use serde_json::{Value, json};
 use tokio::process::Command;
 

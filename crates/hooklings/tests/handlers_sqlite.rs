@@ -1,10 +1,11 @@
-use cruxx_agentic::sqlite;
-use cruxx_script::HandlerRegistry;
+use crux_agentic::sqlite;
+use crux_script::HandlerRegistry;
 use hooklings::handlers::handoff;
 use rusqlite::Connection;
 use serde_json::json;
 use tempfile::NamedTempFile;
 
+#[allow(dead_code)]
 fn setup_handoff_db() -> NamedTempFile {
     let f = NamedTempFile::new().unwrap();
     let conn = Connection::open(f.path()).unwrap();
@@ -27,6 +28,7 @@ fn setup_handoff_db() -> NamedTempFile {
     f
 }
 
+#[allow(dead_code)]
 fn setup_todos_db() -> NamedTempFile {
     let f = NamedTempFile::new().unwrap();
     let conn = Connection::open(f.path()).unwrap();
