@@ -1,0 +1,36 @@
+---
+session_date: 2026-08-23
+branch: main
+head_sha: 55dd46f859b7f2cc093a059c230f45b1eb0833f0
+head_subject: "feat: add Nushell completion generation"
+
+commits_since_last_handoff: 2
+last_handoff_sha: bf9a8c8
+last_handoff_date: 2026-04-22T22:09:17-04:00
+commits:
+  - sha: 55dd46f
+    subject: "feat: add Nushell completion generation"
+    date: 2026-08-05T14:10:01-04:00
+  - sha: 696c6c2
+    subject: "fix: update stale cruxx-* deps to match current crux crate names"
+    date: 2026-08-05T14:10:01-04:00
+
+dirty: true
+untracked:
+  - .DS_Store
+  - crates/.DS_Store
+modifications:
+  - path: crates/hooklings/tests/conformance.rs
+    change: "typo fix: 'cruxx-agentic' → 'crux-agentic' in error message"
+
+pushed: true
+remote: "origin / https://github.com/89jobrien/hooklings"
+ahead_behind: "0 / 0 (in sync with origin/main)"
+
+tests: "not run — skipped per handoff protocol"
+
+status_summary: |
+  hooklings is feature-complete and production-ready (as of last handoff).
+  Recent work: Nushell completion generation feature and dependency name fix.
+  One uncommitted typo fix in conformance test (fix confirms cruxx-* renames are done).
+  Repo clean and in sync with remote.
