@@ -5,6 +5,7 @@ use crux_script::HandlerRegistry;
 use serde_json::{Value, json};
 use tokio::process::Command;
 
+/// Registers handlers that inspect the shell, available tools, and working directory.
 pub fn register(registry: &mut HandlerRegistry) {
     registry.handler_value("detect_shell", |_input: Value| async move {
         let shell_env = std::env::var("SHELL").unwrap_or_default();

@@ -1,3 +1,5 @@
+//! Integration tests for markdown and JSON result emission.
+
 use hooklings::emit::{self, CheckResult, Emitter, Status};
 use serde_json::json;
 

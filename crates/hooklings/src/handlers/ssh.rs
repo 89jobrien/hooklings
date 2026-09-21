@@ -5,6 +5,7 @@ use crux_script::HandlerRegistry;
 use serde_json::{Value, json};
 use tokio::process::Command;
 
+/// Registers the optional SSH reachability check for `host`.
 pub fn register(registry: &mut HandlerRegistry, enabled: bool, host: &str) {
     let host = host.to_string();
     registry.handler_value("ssh::reachable", move |_input: Value| {

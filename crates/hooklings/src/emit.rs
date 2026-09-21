@@ -19,6 +19,7 @@ pub enum Status {
 }
 
 impl Status {
+    /// Returns the lowercase status value used in serialized output.
     pub fn as_str(&self) -> &'static str {
         match self {
             Status::Pass => "pass",
@@ -29,6 +30,7 @@ impl Status {
         }
     }
 
+    /// Returns the uppercase status label used in human-readable output.
     pub fn label(&self) -> &'static str {
         match self {
             Status::Pass => "PASS",
@@ -69,10 +71,12 @@ pub struct Emitter {
 }
 
 impl Emitter {
+    /// Creates an emitter that identifies JSON output with `pipeline`.
     pub fn new(pipeline: String) -> Self {
         Self { pipeline }
     }
 
+    /// Builds a timestamped JSON document from the check results.
     pub fn to_json(&self, results: &[CheckResult]) -> Value {
         let items: Vec<Value> = results
             .iter()
@@ -96,6 +100,7 @@ impl Emitter {
         })
     }
 
+    /// Writes pretty-printed JSON, creating parent directories when needed.
     pub fn write_json(&self, results: &[CheckResult], path: &Path) -> std::io::Result<()> {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;

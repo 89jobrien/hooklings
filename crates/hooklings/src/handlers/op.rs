@@ -5,6 +5,7 @@ use crux_script::HandlerRegistry;
 use serde_json::{Value, json};
 use tokio::process::Command;
 
+/// Registers the optional 1Password authentication check.
 pub fn register(registry: &mut HandlerRegistry, enabled: bool) {
     registry.handler_value("op::auth_check", move |_input: Value| async move {
         if !enabled {

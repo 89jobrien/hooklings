@@ -1,3 +1,5 @@
+//! Fuzzes TOML configuration parsing with arbitrary UTF-8 input.
+
 #![no_main]
 use hooklings::config::Config;
 use libfuzzer_sys::fuzz_target;

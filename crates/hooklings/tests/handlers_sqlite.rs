@@ -1,3 +1,5 @@
+//! Integration tests for handoff and generic SQLite query handlers.
+
 use crux_agentic::sqlite;
 use crux_script::HandlerRegistry;
 use hooklings::handlers::handoff;

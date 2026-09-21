@@ -1,3 +1,5 @@
+//! Integration tests for configuration defaults, parsing, overlays, and error handling.
+
 use hooklings::config::{ChecksConfig, Config, OpAuthConfig, SshConfig};
 use std::io::Write;
 use tempfile::NamedTempFile;
@@ -86,7 +88,7 @@ default = "/tmp/my.crux"
     assert_eq!(cfg.pipeline.default, "/tmp/my.crux");
 }
 
-// Task 3: property tests
+// Property tests exercise parser and overlay invariants over arbitrary inputs.
 use proptest::prelude::*;
 
 proptest! {

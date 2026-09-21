@@ -112,6 +112,7 @@ impl Default for EmitConfig {
 }
 
 impl Config {
+    /// Reads and deserializes a TOML configuration from `path`.
     pub fn load_from_file(path: &Path) -> Result<Self, ConfigError> {
         let raw = std::fs::read_to_string(path).map_err(|source| ConfigError::Io {
             path: path.to_path_buf(),
@@ -123,6 +124,7 @@ impl Config {
         })
     }
 
+    /// Loads the global configuration and overlays the nearest project configuration.
     pub fn load() -> Self {
         let base = Self::load_global();
         Self::apply_project_overlay(base)
@@ -147,6 +149,7 @@ impl Config {
         }
     }
 
+    /// Overlays non-default values from `other`, combining enabled checks with logical OR.
     pub fn merge(self, other: Self) -> Self {
         Self {
             pipeline: if other.pipeline.default != PipelineConfig::default().default {

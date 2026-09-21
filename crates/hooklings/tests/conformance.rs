@@ -1,3 +1,5 @@
+//! Registry conformance tests for hooklings and shared agentic handlers.
+
 use crux_script::HandlerRegistry;
 use hooklings::{config::Config, handlers};
 
@@ -38,7 +40,7 @@ fn crux_agentic_handlers_also_available() {
     for name in &["git::status", "git::log", "sqlite::exec"] {
         assert!(
             reg.get_handler(name).is_some(),
-            "cruxx-agentic handler missing: {name}"
+            "crux-agentic handler missing: {name}"
         );
     }
 }

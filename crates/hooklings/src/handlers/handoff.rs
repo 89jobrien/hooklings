@@ -5,6 +5,7 @@ use crux_script::HandlerRegistry;
 use rusqlite::Connection;
 use serde_json::{Value, json};
 
+/// Registers the handoff query handler against the SQLite database at `db_path`.
 pub fn register(registry: &mut HandlerRegistry, db_path: &str) {
     let db = db_path.to_string();
     registry.handler_value("handoff::pending", move |input: Value| {

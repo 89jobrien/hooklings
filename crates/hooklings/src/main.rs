@@ -1,3 +1,5 @@
+//! Command-line interface for running hooklings checks and inspecting configuration.
+
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -145,6 +147,7 @@ async fn main() -> anyhow::Result<()> {
 
             let result = handler(serde_json::json!({}))
                 .await
+                .outcome
                 .map_err(|e| anyhow::anyhow!("handler error: {e}"))?;
             println!("{}", serde_json::to_string_pretty(&result.value)?);
         }

@@ -1,3 +1,5 @@
+//! Fuzzes markdown table emission with bounded arbitrary check results.
+
 #![no_main]
 use hooklings::emit::{self, CheckResult, Status};
 use libfuzzer_sys::fuzz_target;

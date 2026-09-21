@@ -1,3 +1,5 @@
+//! Built-in handlers for environment, authentication, SSH, and handoff checks.
+
 pub mod env;
 pub mod handoff;
 pub mod op;

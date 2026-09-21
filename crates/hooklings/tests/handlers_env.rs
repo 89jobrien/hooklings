@@ -1,3 +1,5 @@
+//! Integration tests for environment inspection handlers.
+
 #![allow(dead_code)]
 
 use crux_script::HandlerRegistry;
