@@ -13,7 +13,11 @@ use hooklings::emit::{self, CheckResult, Emitter, Status};
 use hooklings::handlers;
 
 #[derive(Parser)]
-#[command(name = "hooklings", about = "YAML-driven developer preflight checks")]
+#[command(
+    name = "hooklings",
+    version,
+    about = "YAML-driven developer preflight checks"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
