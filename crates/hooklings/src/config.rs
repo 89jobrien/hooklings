@@ -28,6 +28,8 @@ pub struct Config {
     pub checks: ChecksConfig,
     #[serde(default)]
     pub emit: EmitConfig,
+    #[serde(default)]
+    pub checkpoint: CheckpointConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,6 +113,51 @@ impl Default for EmitConfig {
     }
 }
 
+/// Controls coalesced checkpoint commits made on behalf of an agent harness.
+///
+/// Disabled by default. A checkpoint leaves the working tree clean, which
+/// conflicts with tools that expect a dirty tree to record progress, so it stays
+/// opt-in per project or globally.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CheckpointConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "CheckpointConfig::default_max_files")]
+    pub max_files: usize,
+    #[serde(default = "CheckpointConfig::default_max_lines")]
+    pub max_lines: u64,
+    #[serde(default)]
+    pub allow_protected_branch: bool,
+    #[serde(default = "CheckpointConfig::default_protected_branches")]
+    pub protected_branches: Vec<String>,
+}
+
+impl CheckpointConfig {
+    fn default_max_files() -> usize {
+        40
+    }
+
+    fn default_max_lines() -> u64 {
+        2_000
+    }
+
+    fn default_protected_branches() -> Vec<String> {
+        vec!["develop".into(), "release".into()]
+    }
+}
+
+impl Default for CheckpointConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            max_files: Self::default_max_files(),
+            max_lines: Self::default_max_lines(),
+            allow_protected_branch: false,
+            protected_branches: Self::default_protected_branches(),
+        }
+    }
+}
+
 impl Config {
     /// Reads and deserializes a TOML configuration from `path`.
     pub fn load_from_file(path: &Path) -> Result<Self, ConfigError> {
@@ -182,6 +229,11 @@ impl Config {
                 other.emit
             } else {
                 self.emit
+            },
+            checkpoint: if other.checkpoint != CheckpointConfig::default() {
+                other.checkpoint
+            } else {
+                self.checkpoint
             },
         }
     }

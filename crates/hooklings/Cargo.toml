@@ -32,6 +32,7 @@ crux-script = { path = "/Users/joe/dev/crux/crates/crux-script" }
 crux-agentic = { path = "/Users/joe/dev/crux/crates/crux-agentic" }
 crux-runtime = { path = "/Users/joe/dev/crux/crates/crux-runtime", features = ["tokio-runtime"] }
 crux-types = { path = "/Users/joe/dev/crux/crates/crux-types" }
+gix = { version = "0.87.1", features = ["blob-diff"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
