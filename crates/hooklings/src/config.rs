@@ -88,7 +88,7 @@ impl Default for SshConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HandoffConfig {
-    #[serde(default)]
+    #[serde(default = "HandoffConfig::default_db")]
     pub db: String,
     #[serde(default = "HandoffConfig::default_limit")]
     pub default_limit: usize,
@@ -103,6 +103,16 @@ impl HandoffConfig {
     /// `count` still reports the true total.
     fn default_limit() -> usize {
         20
+    }
+
+    /// Default database path for handoff pending items.
+    fn default_db() -> String {
+        "{HOME}/.local/share/atelier/handoff.db".replace(
+            "{HOME}",
+            &std::env::var_os("HOME")
+                .unwrap_or_default()
+                .to_string_lossy(),
+        )
     }
 }
 
