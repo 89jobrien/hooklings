@@ -92,6 +92,27 @@ enum Command {
         #[arg(long)]
         repo: Option<PathBuf>,
     },
+    /// Manage checkpoint coalesced commits
+    Coalesce {
+        /// Enable or disable coalesced commits
+        #[arg(long, value_enum, default_value = "auto")]
+        mode: CheckpointMode,
+        /// Repository directory, defaults to the working directory
+        #[arg(long)]
+        repo: Option<PathBuf>,
+    },
+    /// Manage handoff pending default limits
+    Handoff {
+        /// Set a new default limit for handoff pending items
+        #[arg(long)]
+        set: Option<usize>,
+        /// Show the current default limit and config
+        #[arg(long, default_value = "false")]
+        show: bool,
+        /// Repository directory, defaults to the working directory
+        #[arg(long)]
+        repo: Option<PathBuf>,
+    },
 }
 
 #[derive(ValueEnum, Clone, Copy)]
@@ -104,6 +125,14 @@ enum CommitTypeArg {
     Style,
     Build,
     Chore,
+}
+
+/// Mode for checkpoint coalesced commits
+#[derive(ValueEnum, Clone, Copy)]
+enum CheckpointMode {
+    Auto,
+    On,
+    Off,
 }
 
 impl From<CommitTypeArg> for CommitType {
@@ -414,6 +443,135 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let toml_str = toml::to_string_pretty(&cfg)?;
             println!("{toml_str}");
+        }
+
+        Command::Coalesce { mode, repo } => {
+            let cwd = match repo {
+                Some(repo) => repo,
+                None => std::env::current_dir().unwrap_or_default(),
+            };
+            let cfg_path = cwd.join(".hooklings.toml");
+            let cfg_str = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| {
+                String::from(
+                    r#"[checks]
+handoff_pending = { db = "", default_limit = 20 }
+
+[checkpoint]
+enabled = false
+max_files = 40
+max_lines = 2000
+allow_protected_branch = false
+protected_branches = ["develop", "release"]
+
+[pipeline]
+default = "{HOME}/.config/hooklings/default.crux
+
+[emit]
+json_path = ".ctx/last-preflight.json""#,
+                )
+            });
+            let mut cfg: config::Config = match toml::from_str(&cfg_str) {
+                Ok(c) => c,
+                _err => {
+                    println!("could not parse {:?}, showing auto mode only", cfg_path);
+                    match mode {
+                        CheckpointMode::Auto => {
+                            println!("checkpoint coalescing mode: auto");
+                        }
+                        CheckpointMode::On => {
+                            println!("checkpoint coalescing mode: on");
+                        }
+                        CheckpointMode::Off => {
+                            println!("checkpoint coalescing mode: off");
+                        }
+                    }
+                    return Ok(());
+                }
+            };
+
+            match mode {
+                CheckpointMode::Auto => {
+                    let on = cfg.checkpoint.enabled
+                        && checkpoint::commit::current_branch(&checkpoint::discover(&cwd)?)
+                            .map(|b| !b.is_empty())
+                            .unwrap_or(false);
+                    if on {
+                        println!(
+                            "checkpoint coalescing mode: auto (enabled on non-protected branches)"
+                        );
+                    } else {
+                        println!(
+                            "checkpoint coalescing mode: auto (disabled on protected branch or not enabled)"
+                        );
+                    }
+                }
+                CheckpointMode::On => {
+                    cfg.checkpoint.enabled = true;
+                    let new_toml = toml::to_string_pretty(&cfg).unwrap();
+                    let _ = std::fs::write(&cfg_path, &new_toml);
+                    println!("checkpoint coalescing mode: on (enabled)");
+                }
+                CheckpointMode::Off => {
+                    cfg.checkpoint.enabled = false;
+                    let new_toml = toml::to_string_pretty(&cfg).unwrap();
+                    let _ = std::fs::write(&cfg_path, &new_toml);
+                    println!("checkpoint coalescing mode: off (disabled)");
+                }
+            }
+        }
+
+        Command::Handoff { set, show, repo } => {
+            let cwd = match repo {
+                Some(repo) => repo,
+                None => std::env::current_dir().unwrap_or_default(),
+            };
+            let cfg_path = cwd.join(".hooklings.toml");
+            let cfg_str = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| {
+                String::from(
+                    r#"[checks]
+handoff_pending = { db = "", default_limit = 20 }
+
+[checkpoint]
+enabled = false
+max_files = 40
+max_lines = 2000
+allow_protected_branch = false
+protected_branches = ["develop", "release"]
+
+[pipeline]
+default = "{HOME}/.config/hooklings/default.crux
+
+[emit]
+json_path = ".ctx/last-preflight.json""#,
+                )
+            });
+            let mut cfg: config::Config = match toml::from_str(&cfg_str) {
+                Ok(c) => c,
+                _err => {
+                    println!(
+                        "could not parse {:?}, showing handoff config only",
+                        cfg_path
+                    );
+                    if show {
+                        println!("handoff_pending.default_limit = 20");
+                        println!("handoff_pending.db = ");
+                    }
+                    return Ok(());
+                }
+            };
+
+            if show {
+                let hc = &cfg.checks.handoff_pending;
+                println!("handoff_pending.default_limit = {}", hc.default_limit);
+                println!("handoff_pending.db = {}", hc.db);
+            }
+
+            if let Some(n) = set {
+                cfg.checks.handoff_pending.default_limit = n;
+                let new_toml = toml::to_string_pretty(&cfg).unwrap();
+                let _ = std::fs::write(&cfg_path, &new_toml);
+                println!("handoff_pending.default_limit set to {}", n);
+            }
         }
 
         Command::ResolvePushRange { main_branch, repo } => {
