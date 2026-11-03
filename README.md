@@ -120,6 +120,39 @@ Override per-project:
 default = ".hooklings/ci.crux"
 ```
 
-## atelier Integration
+## Integration
 
-atelier's SessionStart hook calls `hooklings preflight --emit both` when hooklings is on PATH.
+A crs plugin rule invokes this at SessionStart, gated on the binary being on PATH:
+
+```toml
+[[hooks]]
+label = "preflight/hooklings-briefing"
+event = "session-start"
+action = "run"
+capture = true
+command = ["hooklings", "preflight", "--emit", "table"]
+```
+
+Defined in `session-lifecycle.toml` under `~/.config/crs/plugins.d/`, with
+`crs hook session-start` wired from `~/.claude/settings.json`.
+
+Checkpoint is wired the same way, as three rules in the same file:
+`record --stdin` on `PostToolUse` `Edit|Write`, and `checkpoint` on `stop` and
+`pre-compact`. All three are inert for repos that have not set
+`[checkpoint] enabled = true`.
+
+Use `--emit table`, not `--emit both`: `both` also writes
+`.ctx/last-preflight.json` into the session's cwd, which dirties the repo and
+blocks anything that needs a clean working tree. `table` writes nothing.
+
+Two properties this integration depends on, both of which were bugs first:
+
+- **Every step is `allow_failure: true`** in `default.crux`. crux aborts the
+  pipeline on the first error by default, which truncated the briefing at
+  `git::status` whenever the session started outside a git repo — dropping
+  `op::auth_check`, `ssh::reachable`, and `handoff::pending`, which are the checks
+  most likely to matter.
+- **`handoff::pending` caps its payload** (default 20 items, `limit` arg,
+  clamped to 1..500). It reports `count` as the true total alongside
+  `returned` and `truncated`. Uncapped it returned 164 items / 1314 lines of
+  JSON, which is not a usable session-start context injection.

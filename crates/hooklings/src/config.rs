@@ -88,7 +88,22 @@ impl Default for SshConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HandoffConfig {
+    #[serde(default)]
     pub db: String,
+    #[serde(default = "HandoffConfig::default_limit")]
+    pub default_limit: usize,
+}
+
+impl HandoffConfig {
+    /// Items returned when the caller does not ask for a specific count. The
+    /// unfiltered query spans every project, so the real result set is
+    /// routinely far larger than anything a caller can act on — measured at
+    /// 164 items / 1314 lines of JSON on 2026-09-30. Ordering is
+    /// priority-then-project-then-id, so a cap keeps the most urgent work and
+    /// `count` still reports the true total.
+    fn default_limit() -> usize {
+        20
+    }
 }
 
 impl Default for HandoffConfig {
@@ -96,6 +111,7 @@ impl Default for HandoffConfig {
         let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
         Self {
             db: format!("{home}/.local/share/atelier/handoff.db"),
+            default_limit: Self::default_limit(),
         }
     }
 }
@@ -222,6 +238,13 @@ impl Config {
                         other.checks.handoff_pending.db
                     } else {
                         self.checks.handoff_pending.db
+                    },
+                    default_limit: if other.checks.handoff_pending.default_limit
+                        != HandoffConfig::default_limit()
+                    {
+                        other.checks.handoff_pending.default_limit
+                    } else {
+                        self.checks.handoff_pending.default_limit
                     },
                 },
             },

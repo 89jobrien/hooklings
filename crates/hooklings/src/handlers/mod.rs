@@ -16,7 +16,11 @@ pub fn register_all(registry: &mut HandlerRegistry, config: &crate::config::Conf
         config.checks.ssh_reachable.enabled,
         &config.checks.ssh_reachable.host,
     );
-    handoff::register(registry, &config.checks.handoff_pending.db);
+    handoff::register(
+        registry,
+        &config.checks.handoff_pending.db,
+        config.checks.handoff_pending.default_limit,
+    );
     // doob::pending is not registered here — pipelines use sqlite::query_many directly
     // against a user-configured SQLite DB path (see [sqlite.todos] in hooklings.toml).
 }

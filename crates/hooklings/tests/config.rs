@@ -77,6 +77,24 @@ fn missing_file_returns_error() {
 }
 
 #[test]
+fn handoff_default_limit_override() {
+    let f = write_toml(
+        r#"
+[checks.handoff_pending]
+default_limit = 5
+"#,
+    );
+    let cfg = Config::load_from_file(f.path()).unwrap();
+    assert_eq!(cfg.checks.handoff_pending.default_limit, 5);
+}
+
+#[test]
+fn handoff_default_limit_defaults_to_twenty() {
+    let cfg = Config::default();
+    assert_eq!(cfg.checks.handoff_pending.default_limit, 20);
+}
+
+#[test]
 fn pipeline_path_override() {
     let f = write_toml(
         r#"
