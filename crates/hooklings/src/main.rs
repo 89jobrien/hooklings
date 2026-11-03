@@ -14,6 +14,7 @@ use hooklings::checkpoint::{self, CommitType, Outcome};
 use hooklings::config;
 use hooklings::emit::{self, CheckResult, Emitter, Status};
 use hooklings::handlers;
+use hooklings::push_range;
 
 #[derive(Parser)]
 #[command(
@@ -81,6 +82,15 @@ enum Command {
     Config {
         #[command(subcommand)]
         action: ConfigAction,
+    },
+    /// Resolve the commit range(s) being pushed, read from git's pre-push stdin
+    ResolvePushRange {
+        /// Branch to compute the merge-base against for newly pushed branches
+        #[arg(long, default_value = "main")]
+        main_branch: String,
+        /// Repository directory, defaults to the working directory
+        #[arg(long)]
+        repo: Option<PathBuf>,
     },
 }
 
@@ -404,6 +414,20 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let toml_str = toml::to_string_pretty(&cfg)?;
             println!("{toml_str}");
+        }
+
+        Command::ResolvePushRange { main_branch, repo } => {
+            let cwd = match repo {
+                Some(repo) => repo,
+                None => std::env::current_dir()?,
+            };
+            let repo = checkpoint::discover(&cwd)?;
+
+            let stdin = std::io::stdin();
+            let ranges = push_range::resolve(&repo, stdin.lock(), &main_branch)?;
+            for range in &ranges {
+                println!("{range}");
+            }
         }
     }
 
