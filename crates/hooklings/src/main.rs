@@ -14,6 +14,7 @@ use hooklings::checkpoint::{self, CommitType, Outcome};
 use hooklings::config;
 use hooklings::emit::{self, CheckResult, Emitter, Status};
 use hooklings::handlers;
+use hooklings::op_conflicts;
 use hooklings::push_range;
 
 #[derive(Parser)]
@@ -83,6 +84,8 @@ enum Command {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Check a PreToolUse Bash hook payload for `op run` env conflicts
+    CheckOpConflicts,
     /// Resolve the commit range(s) being pushed, read from git's pre-push stdin
     ResolvePushRange {
         /// Branch to compute the merge-base against for newly pushed branches
@@ -571,6 +574,50 @@ json_path = ".ctx/last-preflight.json""#,
                 let new_toml = toml::to_string_pretty(&cfg).unwrap();
                 let _ = std::fs::write(&cfg_path, &new_toml);
                 println!("handoff_pending.default_limit set to {}", n);
+            }
+        }
+
+        Command::CheckOpConflicts => {
+            let mut raw = String::new();
+            if std::io::stdin().read_to_string(&mut raw).is_err() {
+                return Ok(());
+            }
+
+            let command = serde_json::from_str::<serde_json::Value>(&raw)
+                .ok()
+                .filter(|v| v.get("tool_name").and_then(|n| n.as_str()) == Some("Bash"))
+                .and_then(|v| {
+                    v.get("tool_input")?
+                        .get("command")?
+                        .as_str()
+                        .map(str::to_string)
+                });
+
+            let Some(command) = command else {
+                return Ok(());
+            };
+
+            let env_vars: std::collections::HashMap<String, String> = std::env::vars().collect();
+
+            if let Some(conflicts) = op_conflicts::resolve(&command, &env_vars) {
+                let corrected = conflicts.corrected_command(&command);
+                let message = format!(
+                    "[op-conflict-resolver] Found {} environment var(s) that conflict with op:// resolution: {}\n\n\
+                     These vars are already set in shell and will block op run from injecting \
+                     the 1Password values.\n\nCorrected command:\n{corrected}\n\n\
+                     Re-run with the corrected command above.",
+                    conflicts.vars.len(),
+                    conflicts.vars.join(", "),
+                );
+                let payload = serde_json::json!({
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "deny",
+                    },
+                    "systemMessage": message,
+                });
+                eprintln!("{payload}");
+                std::process::exit(2);
             }
         }
 

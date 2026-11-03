@@ -4,4 +4,5 @@ pub mod checkpoint;
 pub mod config;
 pub mod emit;
 pub mod handlers;
+pub mod op_conflicts;
 pub mod push_range;
