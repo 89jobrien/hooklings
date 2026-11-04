@@ -14,6 +14,7 @@ use hooklings::checkpoint::{self, CommitType, Outcome};
 use hooklings::config;
 use hooklings::emit::{self, CheckResult, Emitter, Status};
 use hooklings::handlers;
+use hooklings::op_conflicts;
 use hooklings::push_range;
 
 #[derive(Parser)]
@@ -83,6 +84,8 @@ enum Command {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Check a PreToolUse Bash hook payload for `op run` env conflicts
+    CheckOpConflicts,
     /// Resolve the commit range(s) being pushed, read from git's pre-push stdin
     ResolvePushRange {
         /// Branch to compute the merge-base against for newly pushed branches
@@ -448,45 +451,30 @@ async fn main() -> anyhow::Result<()> {
         Command::Coalesce { mode, repo } => {
             let cwd = match repo {
                 Some(repo) => repo,
-                None => std::env::current_dir().unwrap_or_default(),
+                None => std::env::current_dir()?,
             };
             let cfg_path = cwd.join(".hooklings.toml");
-            let cfg_str = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| {
-                String::from(
-                    r#"[checks]
-handoff_pending = { db = "", default_limit = 20 }
-
-[checkpoint]
-enabled = false
-max_files = 40
-max_lines = 2000
-allow_protected_branch = false
-protected_branches = ["develop", "release"]
-
-[pipeline]
-default = "{HOME}/.config/hooklings/default.crux
-
-[emit]
-json_path = ".ctx/last-preflight.json""#,
-                )
-            });
-            let mut cfg: config::Config = match toml::from_str(&cfg_str) {
-                Ok(c) => c,
-                _err => {
-                    println!("could not parse {:?}, showing auto mode only", cfg_path);
-                    match mode {
-                        CheckpointMode::Auto => {
-                            println!("checkpoint coalescing mode: auto");
+            let mut cfg: config::Config = if cfg_path.exists() {
+                match config::Config::load_from_file(&cfg_path) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        println!("could not parse {cfg_path:?}: {e}; showing auto mode only");
+                        match mode {
+                            CheckpointMode::Auto => {
+                                println!("checkpoint coalescing mode: auto");
+                            }
+                            CheckpointMode::On => {
+                                println!("checkpoint coalescing mode: on");
+                            }
+                            CheckpointMode::Off => {
+                                println!("checkpoint coalescing mode: off");
+                            }
                         }
-                        CheckpointMode::On => {
-                            println!("checkpoint coalescing mode: on");
-                        }
-                        CheckpointMode::Off => {
-                            println!("checkpoint coalescing mode: off");
-                        }
+                        return Ok(());
                     }
-                    return Ok(());
                 }
+            } else {
+                config::Config::default()
             };
 
             match mode {
@@ -523,41 +511,24 @@ json_path = ".ctx/last-preflight.json""#,
         Command::Handoff { set, show, repo } => {
             let cwd = match repo {
                 Some(repo) => repo,
-                None => std::env::current_dir().unwrap_or_default(),
+                None => std::env::current_dir()?,
             };
             let cfg_path = cwd.join(".hooklings.toml");
-            let cfg_str = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| {
-                String::from(
-                    r#"[checks]
-handoff_pending = { db = "", default_limit = 20 }
-
-[checkpoint]
-enabled = false
-max_files = 40
-max_lines = 2000
-allow_protected_branch = false
-protected_branches = ["develop", "release"]
-
-[pipeline]
-default = "{HOME}/.config/hooklings/default.crux
-
-[emit]
-json_path = ".ctx/last-preflight.json""#,
-                )
-            });
-            let mut cfg: config::Config = match toml::from_str(&cfg_str) {
-                Ok(c) => c,
-                _err => {
-                    println!(
-                        "could not parse {:?}, showing handoff config only",
-                        cfg_path
-                    );
-                    if show {
-                        println!("handoff_pending.default_limit = 20");
-                        println!("handoff_pending.db = ");
+            let mut cfg: config::Config = if cfg_path.exists() {
+                match config::Config::load_from_file(&cfg_path) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        println!("could not parse {cfg_path:?}: {e}; showing handoff config only");
+                        if show {
+                            let default = config::HandoffConfig::default();
+                            println!("handoff_pending.default_limit = {}", default.default_limit);
+                            println!("handoff_pending.db = {}", default.db);
+                        }
+                        return Ok(());
                     }
-                    return Ok(());
                 }
+            } else {
+                config::Config::default()
             };
 
             if show {
@@ -571,6 +542,50 @@ json_path = ".ctx/last-preflight.json""#,
                 let new_toml = toml::to_string_pretty(&cfg).unwrap();
                 let _ = std::fs::write(&cfg_path, &new_toml);
                 println!("handoff_pending.default_limit set to {}", n);
+            }
+        }
+
+        Command::CheckOpConflicts => {
+            let mut raw = String::new();
+            if std::io::stdin().read_to_string(&mut raw).is_err() {
+                return Ok(());
+            }
+
+            let command = serde_json::from_str::<serde_json::Value>(&raw)
+                .ok()
+                .filter(|v| v.get("tool_name").and_then(|n| n.as_str()) == Some("Bash"))
+                .and_then(|v| {
+                    v.get("tool_input")?
+                        .get("command")?
+                        .as_str()
+                        .map(str::to_string)
+                });
+
+            let Some(command) = command else {
+                return Ok(());
+            };
+
+            let env_vars: std::collections::HashMap<String, String> = std::env::vars().collect();
+
+            if let Some(conflicts) = op_conflicts::resolve(&command, &env_vars) {
+                let corrected = conflicts.corrected_command(&command);
+                let message = format!(
+                    "[op-conflict-resolver] Found {} environment var(s) that conflict with op:// resolution: {}\n\n\
+                     These vars are already set in shell and will block op run from injecting \
+                     the 1Password values.\n\nCorrected command:\n{corrected}\n\n\
+                     Re-run with the corrected command above.",
+                    conflicts.vars.len(),
+                    conflicts.vars.join(", "),
+                );
+                let payload = serde_json::json!({
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "deny",
+                    },
+                    "systemMessage": message,
+                });
+                eprintln!("{payload}");
+                std::process::exit(2);
             }
         }
 
