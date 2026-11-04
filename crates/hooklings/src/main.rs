@@ -451,45 +451,30 @@ async fn main() -> anyhow::Result<()> {
         Command::Coalesce { mode, repo } => {
             let cwd = match repo {
                 Some(repo) => repo,
-                None => std::env::current_dir().unwrap_or_default(),
+                None => std::env::current_dir()?,
             };
             let cfg_path = cwd.join(".hooklings.toml");
-            let cfg_str = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| {
-                String::from(
-                    r#"[checks]
-handoff_pending = { db = "", default_limit = 20 }
-
-[checkpoint]
-enabled = false
-max_files = 40
-max_lines = 2000
-allow_protected_branch = false
-protected_branches = ["develop", "release"]
-
-[pipeline]
-default = "{HOME}/.config/hooklings/default.crux
-
-[emit]
-json_path = ".ctx/last-preflight.json""#,
-                )
-            });
-            let mut cfg: config::Config = match toml::from_str(&cfg_str) {
-                Ok(c) => c,
-                _err => {
-                    println!("could not parse {:?}, showing auto mode only", cfg_path);
-                    match mode {
-                        CheckpointMode::Auto => {
-                            println!("checkpoint coalescing mode: auto");
+            let mut cfg: config::Config = if cfg_path.exists() {
+                match config::Config::load_from_file(&cfg_path) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        println!("could not parse {cfg_path:?}: {e}; showing auto mode only");
+                        match mode {
+                            CheckpointMode::Auto => {
+                                println!("checkpoint coalescing mode: auto");
+                            }
+                            CheckpointMode::On => {
+                                println!("checkpoint coalescing mode: on");
+                            }
+                            CheckpointMode::Off => {
+                                println!("checkpoint coalescing mode: off");
+                            }
                         }
-                        CheckpointMode::On => {
-                            println!("checkpoint coalescing mode: on");
-                        }
-                        CheckpointMode::Off => {
-                            println!("checkpoint coalescing mode: off");
-                        }
+                        return Ok(());
                     }
-                    return Ok(());
                 }
+            } else {
+                config::Config::default()
             };
 
             match mode {
@@ -526,41 +511,24 @@ json_path = ".ctx/last-preflight.json""#,
         Command::Handoff { set, show, repo } => {
             let cwd = match repo {
                 Some(repo) => repo,
-                None => std::env::current_dir().unwrap_or_default(),
+                None => std::env::current_dir()?,
             };
             let cfg_path = cwd.join(".hooklings.toml");
-            let cfg_str = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| {
-                String::from(
-                    r#"[checks]
-handoff_pending = { db = "", default_limit = 20 }
-
-[checkpoint]
-enabled = false
-max_files = 40
-max_lines = 2000
-allow_protected_branch = false
-protected_branches = ["develop", "release"]
-
-[pipeline]
-default = "{HOME}/.config/hooklings/default.crux
-
-[emit]
-json_path = ".ctx/last-preflight.json""#,
-                )
-            });
-            let mut cfg: config::Config = match toml::from_str(&cfg_str) {
-                Ok(c) => c,
-                _err => {
-                    println!(
-                        "could not parse {:?}, showing handoff config only",
-                        cfg_path
-                    );
-                    if show {
-                        println!("handoff_pending.default_limit = 20");
-                        println!("handoff_pending.db = ");
+            let mut cfg: config::Config = if cfg_path.exists() {
+                match config::Config::load_from_file(&cfg_path) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        println!("could not parse {cfg_path:?}: {e}; showing handoff config only");
+                        if show {
+                            let default = config::HandoffConfig::default();
+                            println!("handoff_pending.default_limit = {}", default.default_limit);
+                            println!("handoff_pending.db = {}", default.db);
+                        }
+                        return Ok(());
                     }
-                    return Ok(());
                 }
+            } else {
+                config::Config::default()
             };
 
             if show {
