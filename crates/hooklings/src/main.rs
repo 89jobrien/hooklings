@@ -220,6 +220,7 @@ fn now_rfc3339() -> String {
 #[derive(Subcommand)]
 enum ConfigAction {
     Show,
+    Validate,
 }
 
 #[derive(ValueEnum, Clone)]
@@ -446,6 +447,43 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let toml_str = toml::to_string_pretty(&cfg)?;
             println!("{toml_str}");
+        }
+
+        Command::Config {
+            action: ConfigAction::Validate,
+        } => {
+            let cwd = std::env::current_dir().unwrap_or_default();
+            let cfg_path = cwd.join(".hooklings.toml");
+
+            if !cfg_path.exists() {
+                println!("No .hooklings.toml found at {:?}", cfg_path);
+                println!("(Config file is optional — defaults will be used.)");
+                return Ok(());
+            }
+
+            let cfg_str = std::fs::read_to_string(&cfg_path).unwrap_or_else(|_| String::from(""));
+            let result = toml::from_str::<config::Config>(&cfg_str);
+
+            match &result {
+                Ok(cfg) => {
+                    println!("✓ {:?} is valid TOML", cfg_path);
+                    println!(
+                        "  checks.handoff_pending.default_limit = {}",
+                        cfg.checks.handoff_pending.default_limit
+                    );
+                    println!(
+                        "  checks.handoff_pending.db = {}",
+                        cfg.checks.handoff_pending.db
+                    );
+                    println!("  checkpoint.enabled = {}", cfg.checkpoint.enabled);
+                    println!("  checkpoint.max_files = {}", cfg.checkpoint.max_files);
+                    println!("  checkpoint.max_lines = {}", cfg.checkpoint.max_lines);
+                }
+                Err(e) => {
+                    println!("✗ {:?} has a TOML parse error", cfg_path);
+                    println!("  error: {}", e);
+                }
+            }
         }
 
         Command::Coalesce { mode, repo } => {
