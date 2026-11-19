@@ -5,7 +5,6 @@
 //! and the compiled binary.
 
 use std::process::Command;
-use tempfile::TempDir;
 
 fn hooklings_cmd() -> Command {
     Command::new(env!("CARGO_BIN_EXE_hooklings"))

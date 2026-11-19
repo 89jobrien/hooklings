@@ -34,9 +34,6 @@ fn config_validate_no_panic() {
         .expect("run hooklings config validate");
 
     // Should not panic - exit code 0 or a reasonable error message
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-
     // At minimum, the command should run without crashing
     assert!(
         output.status.code().is_some(),
