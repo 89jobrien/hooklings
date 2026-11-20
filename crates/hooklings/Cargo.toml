@@ -28,10 +28,10 @@ thiserror = { workspace = true }
 rusqlite = { workspace = true }
 chrono = { workspace = true }
 anyhow = { workspace = true }
-crux-script = { path = "/Users/joe/dev/crux/crates/crux-script" }
-crux-agentic = { path = "/Users/joe/dev/crux/crates/crux-agentic" }
-crux-runtime = { path = "/Users/joe/dev/crux/crates/crux-runtime", features = ["tokio-runtime"] }
-crux-types = { path = "/Users/joe/dev/crux/crates/crux-types" }
+crux-script = "0.5"
+crux-agentic = "0.5"
+crux-runtime = { version = "0.5", features = ["tokio-runtime"] }
+crux-types = "0.5"
 gix = { version = "0.87.1", features = ["blob-diff", "revision"] }
 
 [dev-dependencies]
